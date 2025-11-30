@@ -139,6 +139,6 @@ class ApiService {
       '/api/notifications',
       queryParameters: {'fcmToken': fcmToken},
     );
-    return response.data;
+    return response.data['data'] as List<dynamic>;
   }
 }
