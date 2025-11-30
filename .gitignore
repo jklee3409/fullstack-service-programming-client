@@ -58,6 +58,7 @@ android/**/gradle-wrapper.jar
 android/.gradle/
 android/app/build/
 android/app/releases/
+android/app/google-services.json
 
 # 키스토어 파일
 android/**/*.jks
