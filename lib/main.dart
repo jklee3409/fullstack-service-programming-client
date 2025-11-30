@@ -1,114 +1,88 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'providers/app_provider.dart';
+import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
 
-void main() {
-  runApp(const MyApp());
+// 백그라운드 메시지 핸들러
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  print("Handling a background message: ${message.messageId}");
 }
 
-class MyApp extends StatelessWidget {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(); // google-services.json 필요
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+            create: (_) => AppProvider()..checkLoginStatus()),
+      ],
+      child: const MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter-Spring Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(),
-    );
-  }
+  State<MyApp> createState() => _MyAppState();
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
-
+class _MyAppState extends State<MyApp> {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
+  void initState() {
+    super.initState();
+    _setupFCM();
+  }
 
-class _MyHomePageState extends State<MyHomePage> {
-  String _serverResponse = '서버 응답 대기 중...';
-  bool _isLoading = false;
+  void _setupFCM() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
 
-  // 서버에 데이터를 요청하는 함수
-  Future<void> _fetchDataFromServer() async {
-    setState(() {
-      _isLoading = true;
-      _serverResponse = '서버에 요청 중...';
-    });
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print('User granted permission');
 
-    const String serverUrl =
-        'https://fullstack-service-programming-backend.onrender.com/api/health';
+      // 토큰 얻기 (필요하다면 백엔드로 전송 로직 추가)
+      String? token = await messaging.getToken();
+      // ignore: avoid_print
+      print("FCM Token: $token");
 
-    try {
-      final response = await http.get(Uri.parse(serverUrl));
-
-      if (response.statusCode == 200) {
-        setState(() {
-          _serverResponse = response.body;
-        });
-      } else {
-        setState(() {
-          _serverResponse = '에러 발생: ${response.statusCode}';
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _serverResponse = '요청 실패: $e';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
+      // 포그라운드 메시지 수신
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        print('Got a message whilst in the foreground!');
+        if (message.notification != null) {
+          print(
+              'Message also contained a notification: ${message.notification}');
+          // 여기에서 로컬 알림(Local Notification)을 띄우는 코드를 추가할 수 있습니다.
+        }
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('Flutter - Spring 연동 테스트'),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'GitInsight',
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF101922),
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              const Text('서버로부터 받은 메시지:', style: TextStyle(fontSize: 18)),
-              const SizedBox(height: 20),
-              // 서버 응답을 보여줄 텍스트 위젯
-              Text(
-                _serverResponse,
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: Colors.blueAccent,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-              // 요청을 보낼 버튼
-              ElevatedButton(
-                onPressed: _isLoading ? null : _fetchDataFromServer,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 30,
-                    vertical: 15,
-                  ),
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        '서버에 메시지 요청하기',
-                        style: TextStyle(fontSize: 16),
-                      ),
-              ),
-            ],
-          ),
-        ),
+      home: Consumer<AppProvider>(
+        builder: (context, auth, child) {
+          return auth.isAuthenticated
+              ? const HomeScreen()
+              : const LoginScreen();
+        },
       ),
     );
   }
