@@ -20,52 +20,57 @@ class ApiService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   ApiService() {
-    _dio.interceptors.add(InterceptorsWrapper(
-      onRequest: (options, handler) async {
-        final token = await _storage.read(key: 'accessToken');
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
-        }
-        return handler.next(options);
-      },
-      onError: (DioException e, handler) async {
-        if (e.response?.statusCode == 401) {
-          final refreshToken = await _storage.read(key: 'refreshToken');
-          if (refreshToken != null) {
-            try {
-              final response = await Dio().post(
-                '$baseUrl/api/auth/refresh',
-                options: Options(headers: {
-                  'Authorization-Refresh': 'Bearer $refreshToken',
-                  'User-Agent':
-                      'Mozilla/5.0 (Linux; Android 10; K) AppleW... (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
-                }),
-              );
-              final newAccess = response.data['data']['accessToken'];
-              final newRefresh = response.data['data']['refreshToken'];
-              await _storage.write(key: 'accessToken', value: newAccess);
-              await _storage.write(key: 'refreshToken', value: newRefresh);
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = await _storage.read(key: 'accessToken');
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          return handler.next(options);
+        },
+        onError: (DioException e, handler) async {
+          if (e.response?.statusCode == 401) {
+            final refreshToken = await _storage.read(key: 'refreshToken');
+            if (refreshToken != null) {
+              try {
+                final response = await Dio().post(
+                  '$baseUrl/api/auth/refresh',
+                  options: Options(headers: {
+                    'Authorization-Refresh': 'Bearer $refreshToken',
+                    'User-Agent':
+                        'Mozilla/5.0 (Linux; Android 10; K) AppleW... (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+                  }),
+                );
 
-              e.requestOptions.headers['Authorization'] = 'Bearer $newAccess';
+                final data = response.data['data'];
+                final newAccess = data['accessToken'];
+                final newRefresh = data['refreshToken'];
 
-              final cloneReq = await _dio.request(
-                e.requestOptions.path,
-                options: Options(
-                  method: e.requestOptions.method,
-                  headers: e.requestOptions.headers,
-                ),
-                data: e.requestOptions.data,
-                queryParameters: e.requestOptions.queryParameters,
-              );
-              return handler.resolve(cloneReq);
-            } catch (refreshError) {
-              await logout();
+                await _storage.write(key: 'accessToken', value: newAccess);
+                await _storage.write(key: 'refreshToken', value: newRefresh);
+
+                e.requestOptions.headers['Authorization'] = 'Bearer $newAccess';
+
+                final cloneReq = await _dio.request(
+                  e.requestOptions.path,
+                  options: Options(
+                    method: e.requestOptions.method,
+                    headers: e.requestOptions.headers,
+                  ),
+                  data: e.requestOptions.data,
+                  queryParameters: e.requestOptions.queryParameters,
+                );
+                return handler.resolve(cloneReq);
+              } catch (_) {
+                await logout();
+              }
             }
           }
-        }
-        return handler.next(e);
-      },
-    ));
+          return handler.next(e);
+        },
+      ),
+    );
   }
 
   Future<bool> loginWithGithub(String code) async {
@@ -76,26 +81,20 @@ class ApiService {
       final response = await _dio.post(
         '/api/auth/github/login',
         data: {'code': code},
-        options: Options(
-          contentType: Headers.jsonContentType,
-        ),
+        options: Options(contentType: Headers.jsonContentType),
       );
 
       if (response.statusCode == 200) {
         final data = response.data['data'];
         await _storage.write(key: 'accessToken', value: data['accessToken']);
         await _storage.write(key: 'refreshToken', value: data['refreshToken']);
-        print("Login Success");
         return true;
       }
     } catch (e) {
       if (e is DioException) {
-        print('=== Login Error Details ===');
-        print('Status Code: ${e.response?.statusCode}');
-        print('Error Data: ${e.response?.data}');
-        print('Message: ${e.message}');
+        print('Login error: ${e.response?.data}');
       } else {
-        print('Login Error: $e');
+        print('Login error: $e');
       }
     }
     return false;
@@ -131,7 +130,10 @@ class ApiService {
   }
 
   Future<void> registerFcmToken(String token) async {
-    await _dio.post('/api/fcm/token', data: {'fcmToken': token});
+    await _dio.post(
+      '/api/fcm/token',
+      data: {'fcmToken': token},
+    );
   }
 
   Future<List<dynamic>> getNotifications(String fcmToken) async {
@@ -139,6 +141,7 @@ class ApiService {
       '/api/notifications',
       queryParameters: {'fcmToken': fcmToken},
     );
-    return response.data['data'] as List<dynamic>;
+    final data = response.data;
+    return data['data'] as List<dynamic>;
   }
 }

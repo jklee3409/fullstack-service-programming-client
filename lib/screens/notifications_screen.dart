@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../services/api_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   final String? fcmToken;
+  final bool embedded;
 
-  const NotificationsScreen({super.key, required this.fcmToken});
+  const NotificationsScreen({
+    super.key,
+    this.fcmToken,
+    this.embedded = false,
+  });
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -20,72 +26,124 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<List<dynamic>> _loadNotifications() async {
-    if (widget.fcmToken == null) {
-      return [];
+    String? token = widget.fcmToken;
+
+    if (token == null || token.isEmpty) {
+      token = await FirebaseMessaging.instance.getToken();
     }
-    return ApiService().getNotifications(widget.fcmToken!);
+
+    if (token == null || token.isEmpty) {
+      debugPrint('[NotificationsScreen] FCM token is null or empty');
+      throw Exception('FCM token is not available');
+    }
+
+    final api = ApiService();
+    final list = await api.getNotifications(token);
+    return list;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Notifications'),
-        backgroundColor: const Color(0xFF101922),
-      ),
-      backgroundColor: const Color(0xFF101922),
-      body: FutureBuilder<List<dynamic>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return const Center(child: Text('Failed to load notifications'));
-          }
-          final items = snapshot.data ?? [];
-          if (items.isEmpty) {
-            return const Center(child: Text('No notifications'));
-          }
-          return ListView.builder(
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final n = items[index];
-              final title = n['title'] as String? ?? '';
-              final body = n['body'] as String? ?? '';
-              final createdAt = n['createdAt'] as String? ?? '';
-              return ListTile(
+    final body = FutureBuilder<List<dynamic>>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Failed to load notifications\n${snapshot.error}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white),
+            ),
+          );
+        }
+
+        final items = snapshot.data ?? [];
+
+        if (items.isEmpty) {
+          return const Center(
+            child: Text(
+              'No notifications',
+              style: TextStyle(color: Colors.white),
+            ),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            final n = items[index] as Map<String, dynamic>;
+            final title = n['title'] as String? ?? '';
+            final bodyText = n['body'] as String? ?? '';
+            final createdAt = n['createdAt'] as String? ?? '';
+
+            return Card(
+              color: const Color(0xFF1E293B),
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
                 title: Text(
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      body,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                    if (bodyText.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          bodyText,
+                          style: const TextStyle(
+                            color: Color(0xFFCBD5F5),
+                            fontSize: 13,
+                          ),
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 4),
                     Text(
                       createdAt,
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
-                        fontSize: 12,
+                      style: const TextStyle(
+                        color: Color(0xFF9CA3AF),
+                        fontSize: 11,
                       ),
                     ),
                   ],
                 ),
-              );
-            },
-          );
-        },
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (widget.embedded) {
+      return body;
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF101922),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF101922),
+        title: const Text(
+          'Notifications',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
+      body: body,
     );
   }
 }

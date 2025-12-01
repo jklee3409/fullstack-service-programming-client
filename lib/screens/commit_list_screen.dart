@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../providers/app_provider.dart';
 import 'commit_detail_screen.dart';
+import 'home_screen.dart';
 
 class CommitListScreen extends StatefulWidget {
   final Repository repository;
@@ -42,8 +43,10 @@ class _CommitListScreenState extends State<CommitListScreen> {
       backgroundColor: const Color(0xFF101922),
       appBar: AppBar(
         backgroundColor: const Color(0xFF101922),
-        title: Text(widget.repository.repoFullName,
-            style: const TextStyle(color: Colors.white, fontSize: 18)),
+        title: Text(
+          widget.repository.repoFullName,
+          style: const TextStyle(color: Colors.white, fontSize: 18),
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _loading
@@ -57,59 +60,113 @@ class _CommitListScreenState extends State<CommitListScreen> {
                 final commits = (group['commits'] as List)
                     .map((e) => CommitSummary.fromJson(e))
                     .toList();
-
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 8, horizontal: 4),
                       child: Text(
                         DateFormat.yMMMMd().format(date),
                         style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     ...commits.map((commit) => _buildCommitCard(commit)),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                   ],
                 );
               },
             ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xFF101922),
+        selectedItemColor: const Color(0xFF137FEC),
+        unselectedItemColor: const Color(0xFF9CA3AF),
+        currentIndex: 0,
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const HomeScreen(initialIndex: 0),
+              ),
+              (route) => false,
+            );
+          } else if (index == 1) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const HomeScreen(initialIndex: 1),
+              ),
+              (route) => false,
+            );
+          } else if (index == 2) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const HomeScreen(initialIndex: 2),
+              ),
+              (route) => false,
+            );
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Repositories',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Notifications',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Settings',
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildCommitCard(CommitSummary commit) {
     return Card(
-      color: const Color(0xFF101922),
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: Colors.white.withOpacity(0.1)),
-        borderRadius: BorderRadius.circular(8),
-      ),
+      color: const Color(0xFF1E293B),
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
+        borderRadius: BorderRadius.circular(12),
         onTap: () {
           Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CommitDetailScreen(commitId: commit.id),
-              ));
+            context,
+            MaterialPageRoute(
+              builder: (context) => CommitDetailScreen(commitId: commit.id),
+            ),
+          );
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(commit.message,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16)),
+              Text(
+                commit.message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
               const SizedBox(height: 8),
               Text(
                 commit.summary,
                 style: TextStyle(
-                    color: Colors.white.withOpacity(0.6), fontSize: 14),
+                  color: Colors.white.withOpacity(0.6),
+                  fontSize: 14,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -117,18 +174,34 @@ class _CommitListScreenState extends State<CommitListScreen> {
               Row(
                 children: [
                   CircleAvatar(
-                      radius: 10,
-                      backgroundColor: Colors.grey,
-                      child: Text(commit.authorName[0])),
-                  const SizedBox(width: 8),
-                  Text(commit.authorName,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                  const Spacer(),
-                  Text(commit.commitSha.substring(0, 7),
+                    radius: 10,
+                    backgroundColor: Colors.grey,
+                    child: Text(
+                      commit.authorName.isNotEmpty ? commit.authorName[0] : '?',
                       style: const TextStyle(
-                          color: Color(0xFF137FEC), fontSize: 12)),
+                        color: Colors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    commit.authorName,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    commit.commitSha.substring(0, 7),
+                    style: const TextStyle(
+                      color: Color(0xFF137FEC),
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
-              )
+              ),
             ],
           ),
         ),

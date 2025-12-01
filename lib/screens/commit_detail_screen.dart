@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../providers/app_provider.dart';
+import 'home_screen.dart';
 
 class CommitDetailScreen extends StatefulWidget {
   final int commitId;
@@ -31,9 +32,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
         _loading = false;
       });
     } catch (e) {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
     }
   }
 
@@ -42,9 +41,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
     if (_loading) {
       return const Scaffold(
         backgroundColor: Color(0xFF101922),
-        body: Center(
-          child: CircularProgressIndicator(color: Colors.blueAccent),
-        ),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -53,8 +50,8 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
         backgroundColor: Color(0xFF101922),
         body: Center(
           child: Text(
-            "Failed to load commit details",
-            style: TextStyle(color: Colors.white54),
+            'Failed to load commit detail',
+            style: TextStyle(color: Colors.white),
           ),
         ),
       );
@@ -94,6 +91,54 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: const Color(0xFF101922),
+        selectedItemColor: const Color(0xFF137FEC),
+        unselectedItemColor: const Color(0xFF9CA3AF),
+        currentIndex: 0,
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const HomeScreen(initialIndex: 0),
+              ),
+              (route) => false,
+            );
+          } else if (index == 1) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const HomeScreen(initialIndex: 1),
+              ),
+              (route) => false,
+            );
+          } else if (index == 2) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const HomeScreen(initialIndex: 2),
+              ),
+              (route) => false,
+            );
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Repositories',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Notifications',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Settings',
+          ),
+        ],
+      ),
     );
   }
 
@@ -118,9 +163,10 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                   ? _detail!.authorName[0].toUpperCase()
                   : '?',
               style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold),
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(width: 16),
@@ -137,27 +183,26 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF334155)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.commit, size: 14, color: Color(0xFF64748B)),
-                const SizedBox(width: 6),
-                Text(
-                  shortSha,
-                  style: const TextStyle(
-                    color: Color(0xFFCBD5E1),
-                    fontFamily: 'monospace',
-                    fontSize: 13,
-                  ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        shortSha,
+                        style: const TextStyle(
+                          color: Color(0xFF38BDF8),
+                          fontSize: 12,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -168,12 +213,18 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
   }
 
   Widget _buildOriginalMessage() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF1E293B)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
             'ORIGINAL MESSAGE',
             style: TextStyle(
               color: Color(0xFF64748B),
@@ -182,25 +233,17 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
               letterSpacing: 1.0,
             ),
           ),
-        ),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E293B).withOpacity(0.5),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
-          ),
-          child: Text(
+          const SizedBox(height: 10),
+          Text(
             _detail!.message,
             style: const TextStyle(
-              color: Colors.white,
+              color: Color(0xFFE2E8F0),
               fontSize: 15,
               height: 1.6,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -231,18 +274,14 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
       case 'CHORE':
         typeColor = const Color(0xFF3B82F6);
         break;
-      case 'REFACTOR':
-        typeColor = const Color(0xFFA855F7);
-        break;
       default:
-        typeColor = const Color(0xFF64748B);
+        typeColor = const Color(0xFF6366F1);
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Padding(
               padding: EdgeInsets.only(left: 4),
@@ -258,6 +297,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              margin: const EdgeInsets.only(left: 10),
               decoration: BoxDecoration(
                 color: typeColor.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(20),
@@ -300,21 +340,6 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.auto_awesome, size: 18, color: typeColor),
-                  const SizedBox(width: 8),
-                  const Text(
-                    "Summary",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
               Text(
                 summary,
                 style: const TextStyle(
@@ -336,13 +361,10 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                ...mainChanges.map((change) {
-                  if (change is! Map<String, dynamic>)
-                    return const SizedBox.shrink();
-                  final file = change['file']?.toString() ?? '';
-                  final desc = change['changeDescription']?.toString() ?? '';
+                ...mainChanges.map((c) {
+                  final text = c.toString();
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.only(bottom: 10),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -361,17 +383,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                                 height: 1.5,
                               ),
                               children: [
-                                if (file.isNotEmpty)
-                                  TextSpan(
-                                    text: "$file\n",
-                                    style: const TextStyle(
-                                      color: Color(0xFF60A5FA),
-                                      fontWeight: FontWeight.w500,
-                                      fontFamily: 'monospace',
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                TextSpan(text: desc),
+                                TextSpan(text: text),
                               ],
                             ),
                           ),
@@ -379,7 +391,7 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
                       ],
                     ),
                   );
-                }),
+                }).toList(),
               ],
             ],
           ),
@@ -420,38 +432,41 @@ class _CommitDetailScreenState extends State<CommitDetailScreen> {
               child: Text(
                 files.length.toString(),
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold),
+                  color: Color(0xFFE2E8F0),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
         ),
         ListView.builder(
+          itemCount: files.length,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: files.length,
           itemBuilder: (context, index) {
             final fileName = files[index];
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: const Color(0xFF020617),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFF1E293B),
+                ),
               ),
               child: ListTile(
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 leading: Container(
-                  padding: const EdgeInsets.all(8),
+                  width: 30,
+                  height: 30,
                   decoration: BoxDecoration(
                     color: const Color(0xFF0F172A),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
-                    Icons.description_outlined,
-                    color: Color(0xFF94A3B8),
-                    size: 20,
+                    Icons.insert_drive_file_outlined,
+                    color: Color(0xFF38BDF8),
+                    size: 18,
                   ),
                 ),
                 title: Text(
